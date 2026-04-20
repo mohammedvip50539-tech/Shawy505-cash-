@@ -699,14 +699,31 @@ function isAdmin(){
   return getUser().email===ADMIN_EMAIL;
 }
 
-function updateBalance(){
+async function updateBalance(){
   let user=getUser();
   if(!user.email) return;
   
-  let balanceKey="balance_"+(user.email);
-  let balance=parseFloat(localStorage.getItem(balanceKey))||0;
-  document.getElementById("balanceText").innerText="الرصيد: $"+balance.toFixed(2);
-  if(isAdmin()) document.getElementById("adminLink").style.display="block";
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: new URLSearchParams({
+        action: 'getBalance',
+        email: user.email
+      })
+    });
+    
+    const data = await response.json();
+    let balance = data.balance || 0;
+    localStorage.setItem("balance_"+user.email, balance);
+    
+    document.getElementById("balanceText").innerText="الرصيد: $"+parseFloat(balance).toFixed(2);
+    if(isAdmin()) document.getElementById("adminLink").style.display="block";
+  } catch(e) {
+    console.log("خطأ في جلب الرصيد:", e);
+    // في حالة الخطأ، استخدم القيمة المحلية
+    let balance=parseFloat(localStorage.getItem("balance_"+user.email))||0;
+    document.getElementById("balanceText").innerText="الرصيد: $"+balance.toFixed(2);
+  }
 }
 
 function getBalance(){
@@ -717,12 +734,26 @@ function getBalance(){
   return parseFloat(localStorage.getItem(balanceKey))||0;
 }
 
-function setBalance(amount){
+async function setBalance(amount){
   let user=getUser();
   if(!user.email) return;
   
   let balanceKey="balance_"+(user.email);
   localStorage.setItem(balanceKey, amount);
+  
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: new URLSearchParams({
+        action: 'setBalance',
+        email: user.email,
+        balance: amount
+      })
+    });
+  } catch(e) {
+    console.log("خطأ في حفظ الرصيد:", e);
+  }
+  
   updateBalance();
 }
 
@@ -736,7 +767,7 @@ function goToLogin(){
   document.getElementById("loginPage").style.display="flex";
 }
 
-function register(){
+async function register(){
   let email=document.getElementById("regEmail").value.trim();
   let password=document.getElementById("regPassword").value.trim();
   let passwordConfirm=document.getElementById("regPasswordConfirm").value.trim();
@@ -756,32 +787,54 @@ function register(){
     return;
   }
   
-  let users=JSON.parse(localStorage.getItem("users"))||[];
-  
-  if(users.find(u=>u.email===email)){
-    alert("❌ هذا الحساب موجود بالفعل");
-    return;
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: new URLSearchParams({
+        action: 'register',
+        email: email,
+        password: password
+      })
+    });
+    
+    const data = await response.json();
+    
+    if(data.success){
+      // احفظ محلياً أيضاً
+      let users=JSON.parse(localStorage.getItem("users"))||[];
+      if(!users.find(u=>u.email===email)){
+        users.push({email: email, password: btoa(password)});
+        localStorage.setItem("users", JSON.stringify(users));
+      }
+      localStorage.setItem("balance_"+email, "0");
+      localStorage.setItem("orders_"+email, "[]");
+      
+      alert("✅ تم إنشاء الحساب بنجاح!");
+      document.getElementById("regEmail").value="";
+      document.getElementById("regPassword").value="";
+      document.getElementById("regPasswordConfirm").value="";
+      goToLogin();
+    } else {
+      alert("❌ " + (data.message || "خطأ في الإنشاء"));
+    }
+  } catch(e) {
+    alert("❌ خطأ في الاتصال. سيتم الحفظ محلياً");
+    // احفظ محلياً إذا فشل الاتصال بالسحابة
+    let users=JSON.parse(localStorage.getItem("users"))||[];
+    if(users.find(u=>u.email===email)){
+      alert("❌ هذا الحساب موجود بالفعل");
+      return;
+    }
+    users.push({email: email, password: btoa(password)});
+    localStorage.setItem("users", JSON.stringify(users));
+    localStorage.setItem("balance_"+email, "0");
+    localStorage.setItem("orders_"+email, "[]");
+    alert("✅ تم إنشاء الحساب (محلي)!");
+    goToLogin();
   }
-  
-  users.push({
-    email: email,
-    password: btoa(password)
-  });
-  
-  localStorage.setItem("users", JSON.stringify(users));
-  localStorage.setItem("balance_"+email, "0");
-  localStorage.setItem("orders_"+email, "[]");
-  
-  alert("✅ تم إنشاء الحساب بنجاح!");
-  
-  document.getElementById("regEmail").value="";
-  document.getElementById("regPassword").value="";
-  document.getElementById("regPasswordConfirm").value="";
-  
-  goToLogin();
 }
 
-function login(){
+async function login(){
   let email=document.getElementById("emailInput").value.trim();
   let password=document.getElementById("passwordInput").value.trim();
   
@@ -790,19 +843,47 @@ function login(){
     return;
   }
   
-  let users=JSON.parse(localStorage.getItem("users"))||[];
-  let user=users.find(u=>u.email===email&&u.password===btoa(password));
-  
-  if(user){
-    localStorage.setItem("currentUser", JSON.stringify(user));
-    document.getElementById("loginPage").style.display="none";
-    document.getElementById("home").style.display="block";
-    localStorage.setItem("loggedIn","true");
-    loadApps();
-    updateBalance();
-    alert("✅ أهلا وسهلا!");
-  } else {
-    alert("❌ الإيميل أو كلمة المرور غلط");
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: new URLSearchParams({
+        action: 'login',
+        email: email,
+        password: password
+      })
+    });
+    
+    const data = await response.json();
+    
+    if(data.success){
+      localStorage.setItem("currentUser", JSON.stringify({email: email}));
+      localStorage.setItem("balance_"+email, data.balance || 0);
+      document.getElementById("loginPage").style.display="none";
+      document.getElementById("home").style.display="block";
+      localStorage.setItem("loggedIn","true");
+      loadApps();
+      updateBalance();
+      alert("✅ أهلا وسهلا!");
+    } else {
+      alert("❌ " + (data.message || "بيانات خاطئة"));
+    }
+  } catch(e) {
+    alert("❌ خطأ في الاتصال. سيتم المحاولة محلياً");
+    // محاولة محلية
+    let users=JSON.parse(localStorage.getItem("users"))||[];
+    let user=users.find(u=>u.email===email&&u.password===btoa(password));
+    
+    if(user){
+      localStorage.setItem("currentUser", JSON.stringify(user));
+      document.getElementById("loginPage").style.display="none";
+      document.getElementById("home").style.display="block";
+      localStorage.setItem("loggedIn","true");
+      loadApps();
+      updateBalance();
+      alert("✅ أهلا وسهلا (محلي)!");
+    } else {
+      alert("❌ الإيميل أو كلمة المرور غلط");
+    }
   }
 }
 
