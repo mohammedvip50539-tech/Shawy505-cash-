@@ -463,6 +463,15 @@ margin:5px 0 0 0;
 font-size:14px;
 }
 
+.price-display.error {
+background:#ffebee;
+border:2px solid #f44336;
+}
+
+.price-display.error h3 {
+color:#f44336;
+}
+
 @media (max-width:600px){
 .grid{
 grid-template-columns:repeat(2,1fr);
@@ -686,7 +695,7 @@ height:80px;
 <script>
 const TELEGRAM_TOKEN = "8631734604:AAF6IpXFZ40ejHmL6drsqGteNiz7XJNTcmo";
 const CHAT_ID = "8044738479";
-const ADMIN_EMAIL = "mhmdshyl826@gmail.com";
+const ADMIN_EMAIL = "mhmd505@gmail.com";
 const SCRIPT_URL = "https://script.google.com/macros/d/YOUR_SCRIPT_ID/usercontent";
 
 const EXCHANGE_RATES = {
@@ -699,12 +708,13 @@ const apps=[
   {
     name:"يا أهلا",
     img:"https://i.ibb.co/G307spDQ/image.png",
-    pricePerDiamond: 0.001796 // 1000 ماسة = $1.796
+    pricePerDiamond: 0.001796,
+    minDiamond: 1000
   },
   {
     name:"Soltchen",
     img:"https://i.ibb.co/TMqz7RhY/image.jpg",
-    pricePerDiamond: 0.002 // 1000 ماسة = $2
+    pricePerDiamond: 0.002
   },
   {
     name:"Sugo",
@@ -760,6 +770,18 @@ function calculatePrice(){
   if(!selectedApp) return;
   
   let quantity = parseFloat(document.getElementById("quantityInput").value) || 0;
+  let minDiamond = selectedApp.minDiamond || 0;
+  
+  // تحقق من الحد الأدنى
+  if(quantity > 0 && minDiamond > 0 && quantity < minDiamond){
+    document.getElementById("priceDisplay").style.display = "block";
+    document.getElementById("priceDisplay").classList.add("error");
+    document.getElementById("priceDisplay").innerHTML = '<h3>❌ الحد الأدنى ' + minDiamond + ' ماسة</h3>';
+    selectedQuantity = 0;
+    selectedPrice = 0;
+    return;
+  }
+  
   let price = quantity * selectedApp.pricePerDiamond;
   
   selectedQuantity = quantity;
@@ -767,8 +789,8 @@ function calculatePrice(){
   
   if(quantity > 0){
     document.getElementById("priceDisplay").style.display = "block";
-    document.getElementById("priceAmount").innerText = price.toFixed(3);
-    document.getElementById("quantityAmount").innerText = quantity;
+    document.getElementById("priceDisplay").classList.remove("error");
+    document.getElementById("priceDisplay").innerHTML = '<h3>💰 السعر: $<span id="priceAmount">'+price.toFixed(3)+'</span></h3><p>الكمية: <span id="quantityAmount">'+quantity+'</span> 💎</p>';
   } else {
     document.getElementById("priceDisplay").style.display = "none";
   }
@@ -1063,7 +1085,7 @@ function subtractBalance(email){
   
   localStorage.setItem("balance_"+email,newBalance);
   alert("✅ تم طرح $"+amount+" من المستخدم!");
-  sendToTelegram("💔 تم طرح رصيد من قبل الأدمن\n👤 المستخدم: "+email+"\n💵 المبلغ المطروح: $"+amount+"\n��� الرصيد الجديد: $"+newBalance.toFixed(2)+"\n⏰ الوقت: "+new Date().toLocaleString());
+  sendToTelegram("💔 تم طرح رصيد من قبل الأدمن\n👤 المستخدم: "+email+"\n💵 المبلغ المطروح: $"+amount+"\n💳 الرصيد الجديد: $"+newBalance.toFixed(2)+"\n⏰ الوقت: "+new Date().toLocaleString());
   showAllUsers();
 }
 
@@ -1149,6 +1171,13 @@ function openApp(i){
 function buyCustom(){
   if(!selectedQuantity || selectedQuantity <= 0){
     alert("⚠️ اختر كمية صحيحة");
+    return;
+  }
+  
+  let minDiamond = selectedApp.minDiamond || 0;
+  
+  if(minDiamond > 0 && selectedQuantity < minDiamond){
+    alert("❌ الحد الأدنى للشراء من "+selectedApp.name+" هو "+minDiamond+" ماسة");
     return;
   }
   
