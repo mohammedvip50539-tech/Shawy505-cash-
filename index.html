@@ -76,6 +76,14 @@ padding:10px;
 width: 100%;
 }
 
+.pack-grid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:10px;
+padding:10px;
+width: 100%;
+}
+
 .card{
 background:white;
 border-radius:12px;
@@ -95,6 +103,14 @@ width:120px;
 height:120px;
 border-radius:12px;
 margin-bottom:10px;
+}
+
+.pack{
+background:white;
+padding:10px;
+border-radius:10px;
+text-align:center;
+box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 button{
@@ -417,61 +433,6 @@ font-size:18px;
 margin:0;
 }
 
-.quantity-input-box {
-background:white;
-padding:20px;
-border-radius:10px;
-box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-margin-bottom:20px;
-}
-
-.quantity-input-box label {
-display:block;
-color:#2ecc71;
-font-weight:bold;
-margin-bottom:10px;
-font-size:16px;
-}
-
-.quantity-input-box input {
-width:100%;
-padding:15px;
-font-size:18px;
-border:2px solid #2ecc71;
-border-radius:8px;
-text-align:center;
-}
-
-.price-display {
-background:#f0fff4;
-padding:20px;
-border-radius:10px;
-margin-top:15px;
-border:2px solid #2ecc71;
-text-align:center;
-}
-
-.price-display h3 {
-color:#2ecc71;
-font-size:24px;
-margin:0;
-}
-
-.price-display p {
-color:#666;
-margin:5px 0 0 0;
-font-size:14px;
-}
-
-.price-display.error {
-background:#ffebee;
-border:2px solid #f44336;
-}
-
-.price-display.error h3 {
-color:#f44336;
-}
-
 @media (max-width:600px){
 .grid{
 grid-template-columns:repeat(2,1fr);
@@ -482,6 +443,19 @@ padding:10px;
 .card img{
 width:80px;
 height:80px;
+}
+#ordersList {
+grid-template-columns:1fr;
+padding: 10px;
+}
+.order-item {
+padding: 15px;
+}
+.admin-table {
+font-size: 12px;
+}
+.admin-table th, .admin-table td {
+padding: 8px;
 }
 }
 </style>
@@ -563,19 +537,7 @@ height:80px;
 <div onclick="goHome()" style="cursor:pointer;">رجوع</div>
 <div id="title"></div>
 </div>
-<div style="padding:20px;">
-<div class="quantity-input-box">
-<label>💎 اختر كمية الماسات:</label>
-<input type="number" id="quantityInput" placeholder="مثال: 1000" min="1" oninput="calculatePrice()" style="width:100%;padding:15px;font-size:18px;border:2px solid #2ecc71;">
-</div>
-
-<div class="price-display" id="priceDisplay" style="display:none;">
-<h3>💰 السعر: $<span id="priceAmount">0.00</span></h3>
-<p>الكمية: <span id="quantityAmount">0</span> 💎</p>
-</div>
-
-<button onclick="buyCustom()" style="width:100%;padding:15px;margin:20px 0;font-size:16px;background:#2ecc71;">شراء الآن</button>
-</div>
+<div id="packs"></div>
 </div>
 
 <div id="balancePage" style="display:none">
@@ -695,7 +657,9 @@ height:80px;
 <script>
 const TELEGRAM_TOKEN = "8631734604:AAF6IpXFZ40ejHmL6drsqGteNiz7XJNTcmo";
 const CHAT_ID = "8044738479";
-const ADMIN_EMAIL = "mhmd505@gmail.com";
+const ADMIN_EMAIL = "mhmdshyl826@gmail.com";
+
+// غيّر هذا برابط Google Apps Script اللي تنشئه
 const SCRIPT_URL = "https://script.google.com/macros/d/YOUR_SCRIPT_ID/usercontent";
 
 const EXCHANGE_RATES = {
@@ -704,48 +668,9 @@ const EXCHANGE_RATES = {
   bank: 46
 };
 
-const apps=[
-  {
-    name:"يا أهلا",
-    img:"https://i.ibb.co/G307spDQ/image.png",
-    pricePerDiamond: 0.001796,
-    minDiamond: 1000
-  },
-  {
-    name:"Soltchen",
-    img:"https://i.ibb.co/TMqz7RhY/image.jpg",
-    pricePerDiamond: 0.002
-  },
-  {
-    name:"Sugo",
-    img:"https://i.ibb.co/qVF1fnS/image.jpg",
-    pricePerDiamond: 0.002
-  },
-  {
-    name:"YoParty",
-    img:"https://i.ibb.co/8n3DfwWT/image.jpg",
-    pricePerDiamond: 0.002
-  },
-  {
-    name:"Zina Live",
-    img:"https://i.ibb.co/gM9GsQbt/image.jpg",
-    pricePerDiamond: 0.002
-  },
-  {
-    name:"Soul Star",
-    img:"https://i.ibb.co/VW6061sh/image.jpg",
-    pricePerDiamond: 0.002
-  },
-  {
-    name:"4fun",
-    img:"https://i.ibb.co/7tJjGrsn/image.jpg",
-    pricePerDiamond: 0.002
-  }
-];
+const apps=[{name:"يا أهلا",img:"https://i.ibb.co/G307spDQ/image.png",packs:[{amount:2500,price:5},{amount:5200,price:10},{amount:10600,price:20},{amount:27000,price:50},{amount:40000,price:75},{amount:52500,price:100}]},{name:"Soltchen",img:"https://i.ibb.co/TMqz7RhY/image.jpg",packs:[{amount:2500,price:5},{amount:5200,price:10},{amount:10600,price:20},{amount:27000,price:50},{amount:40000,price:75},{amount:52500,price:100}]},{name:"Sugo",img:"https://i.ibb.co/qVF1fnS/image.jpg",packs:[{amount:2500,price:5}]},{name:"YoParty",img:"https://i.ibb.co/8n3DfwWT/image.jpg",packs:[{amount:2500,price:5}]},{name:"Zina Live",img:"https://i.ibb.co/gM9GsQbt/image.jpg",packs:[{amount:2500,price:5}]},{name:"Soul Star",img:"https://i.ibb.co/VW6061sh/image.jpg",packs:[{amount:2500,price:5}]},{name:"4fun",img:"https://i.ibb.co/7tJjGrsn/image.jpg",packs:[{amount:2500,price:5}]}];
 
-let selectedApp = null;
-let selectedQuantity = 0;
-let selectedPrice = 0;
+let selectedMethod="",selectedPrice=0,selectedApp="",selectedAmount=0;
 
 function convertCurrency(type){
   let amount = 0;
@@ -764,36 +689,6 @@ function convertCurrency(type){
   
   let usdAmount = amount / EXCHANGE_RATES[type];
   document.getElementById(resultSpan).innerText = usdAmount.toFixed(2);
-}
-
-function calculatePrice(){
-  if(!selectedApp) return;
-  
-  let quantity = parseFloat(document.getElementById("quantityInput").value) || 0;
-  let minDiamond = selectedApp.minDiamond || 0;
-  
-  // تحقق من الحد الأدنى
-  if(quantity > 0 && minDiamond > 0 && quantity < minDiamond){
-    document.getElementById("priceDisplay").style.display = "block";
-    document.getElementById("priceDisplay").classList.add("error");
-    document.getElementById("priceDisplay").innerHTML = '<h3>❌ الحد الأدنى ' + minDiamond + ' ماسة</h3>';
-    selectedQuantity = 0;
-    selectedPrice = 0;
-    return;
-  }
-  
-  let price = quantity * selectedApp.pricePerDiamond;
-  
-  selectedQuantity = quantity;
-  selectedPrice = price;
-  
-  if(quantity > 0){
-    document.getElementById("priceDisplay").style.display = "block";
-    document.getElementById("priceDisplay").classList.remove("error");
-    document.getElementById("priceDisplay").innerHTML = '<h3>💰 السعر: $<span id="priceAmount">'+price.toFixed(3)+'</span></h3><p>الكمية: <span id="quantityAmount">'+quantity+'</span> 💎</p>';
-  } else {
-    document.getElementById("priceDisplay").style.display = "none";
-  }
 }
 
 function getUser(){
@@ -825,6 +720,7 @@ async function updateBalance(){
     if(isAdmin()) document.getElementById("adminLink").style.display="block";
   } catch(e) {
     console.log("خطأ في جلب الرصيد:", e);
+    // في حالة الخطأ، استخدم القيمة المحلية
     let balance=parseFloat(localStorage.getItem("balance_"+user.email))||0;
     document.getElementById("balanceText").innerText="الرصيد: $"+balance.toFixed(2);
   }
@@ -902,16 +798,39 @@ async function register(){
     });
     
     const data = await response.json();
-  
-  if(data.success){
-  alert("✅ تم إنشاء الحساب بنجاح!");
-  document.getElementById("regEmail").value="";
-  document.getElementById("regPassword").value="";
-  document.getElementById("regPasswordConfirm").value="";
-  goToLogin();
-} else {
-  alert("❌ " + (data.message || "خطأ في الإنشاء"));
-                          }
+    
+    if(data.success){
+      // احفظ محلياً أيضاً
+      let users=JSON.parse(localStorage.getItem("users"))||[];
+      if(!users.find(u=>u.email===email)){
+        users.push({email: email, password: btoa(password)});
+        localStorage.setItem("users", JSON.stringify(users));
+      }
+      localStorage.setItem("balance_"+email, "0");
+      localStorage.setItem("orders_"+email, "[]");
+      
+      alert("✅ تم إنشاء الحساب بنجاح!");
+      document.getElementById("regEmail").value="";
+      document.getElementById("regPassword").value="";
+      document.getElementById("regPasswordConfirm").value="";
+      goToLogin();
+    } else {
+      alert("❌ " + (data.message || "خطأ في الإنشاء"));
+    }
+  } catch(e) {
+    alert("❌ خطأ في الاتصال. سيتم الحفظ محلياً");
+    // احفظ محلياً إذا فشل الاتصال بالسحابة
+    let users=JSON.parse(localStorage.getItem("users"))||[];
+    if(users.find(u=>u.email===email)){
+      alert("❌ هذا الحساب موجود بالفعل");
+      return;
+    }
+    users.push({email: email, password: btoa(password)});
+    localStorage.setItem("users", JSON.stringify(users));
+    localStorage.setItem("balance_"+email, "0");
+    localStorage.setItem("orders_"+email, "[]");
+    alert("✅ تم إنشاء الحساب (محلي)!");
+    goToLogin();
   }
 }
 
@@ -937,16 +856,35 @@ async function login(){
     const data = await response.json();
     
     if(data.success){
-      
+      localStorage.setItem("currentUser", JSON.stringify({email: email}));
+      localStorage.setItem("balance_"+email, data.balance || 0);
       document.getElementById("loginPage").style.display="none";
       document.getElementById("home").style.display="block";
-    
+      localStorage.setItem("loggedIn","true");
       loadApps();
       updateBalance();
       alert("✅ أهلا وسهلا!");
     } else {
       alert("❌ " + (data.message || "بيانات خاطئة"));
     }
+  } catch(e) {
+    alert("❌ خطأ في الاتصال. سيتم المحاولة محلياً");
+    // محاولة محلية
+    let users=JSON.parse(localStorage.getItem("users"))||[];
+    let user=users.find(u=>u.email===email&&u.password===btoa(password));
+    
+    if(user){
+      localStorage.setItem("currentUser", JSON.stringify(user));
+      document.getElementById("loginPage").style.display="none";
+      document.getElementById("home").style.display="block";
+      localStorage.setItem("loggedIn","true");
+      loadApps();
+      updateBalance();
+      alert("✅ أهلا وسهلا (محلي)!");
+    } else {
+      alert("❌ الإيميل أو كلمة المرور غلط");
+    }
+  }
 }
 
 function logout(){
@@ -1052,14 +990,14 @@ function subtractBalance(email){
 
 function showAllOrders(){
   let users=JSON.parse(localStorage.getItem("users"))||[];
-  let html='<h3>جميع الطلبات</h3><div style="overflow-x:auto;"><table class="admin-table"><thead><tr><th>المستخدم</th><th>التطبيق</th><th>الكمية</th><th>السعر</th><th>التاريخ</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>';
+  let html='<h3>جميع الطلبات</h3><div style="overflow-x:auto;"><table class="admin-table"><thead><tr><th>المستخدم</th><th>التطبيق</th><th>السعر</th><th>التاريخ</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>';
   
   users.forEach(user=>{
     let orders=JSON.parse(localStorage.getItem("orders_"+user.email))||[];
     orders.forEach((o,idx)=>{
       let status=o.completed?"✅ منفذ":"⏳ قيد الانتظار";
       let btn=o.completed?"":`<button onclick="completeOrder('${user.email}', ${idx})" style="background:#2ecc71; padding:10px 15px; border-radius:6px; cursor:pointer; white-space: nowrap;">✅ تنفيذ</button>`;
-      html+=`<tr><td>${user.email}</td><td>${o.app}</td><td>${o.amount} 💎</td><td>$${o.price.toFixed(3)}</td><td>${o.date || o.time}</td><td>${status}</td><td>${btn}</td></tr>`;
+      html+=`<tr><td>${user.email}</td><td>${o.app}</td><td>$${o.price}</td><td>${o.date || o.time}</td><td>${status}</td><td>${btn}</td></tr>`;
     });
   });
   
@@ -1106,6 +1044,10 @@ function openOrders(){
   loadOrders();
 }
 
+function openShamSYP(){hideAll();document.getElementById("shamSYP").style.display="block";selectedMethod="شام كاش سوري";}
+function openShamUSD(){hideAll();document.getElementById("shamUSD").style.display="block";selectedMethod="شام كاش دولار";}
+function openBank(){hideAll();document.getElementById("bankPage").style.display="block";selectedMethod="زراعات بنك";}
+
 function toggle(){
   document.getElementById("sidebar").classList.toggle("open");
   document.getElementById("overlay").style.display=document.getElementById("sidebar").classList.contains("open")?"block":"none";
@@ -1120,28 +1062,21 @@ function loadApps(){
 }
 
 function openApp(i){
-  selectedApp = apps[i];
-  document.getElementById("quantityInput").value = "";
-  document.getElementById("priceDisplay").style.display = "none";
-  
   hideAll();
   document.getElementById("appPage").style.display="block";
   document.getElementById("title").innerText=apps[i].name;
+  let html="<div class='pack-grid'>";
+  apps[i].packs.forEach(p=>{
+    html+=`<div class="pack"><div>${p.amount} 💎</div><div>$${p.price}</div><button onclick="buy('${apps[i].name}', ${p.amount}, ${p.price})">شراء</button></div>`;
+  });
+  html+="</div>";
+  document.getElementById("packs").innerHTML=html;
 }
 
-function buyCustom(){
-  if(!selectedQuantity || selectedQuantity <= 0){
-    alert("⚠️ اختر كمية صحيحة");
-    return;
-  }
-  
-  let minDiamond = selectedApp.minDiamond || 0;
-  
-  if(minDiamond > 0 && selectedQuantity < minDiamond){
-    alert("❌ الحد الأدنى للشراء من "+selectedApp.name+" هو "+minDiamond+" ماسة");
-    return;
-  }
-  
+function buy(app,amount,price){
+  selectedApp=app;
+  selectedAmount=amount;
+  selectedPrice=price;
   document.getElementById("modal").style.display="flex";
 }
 
@@ -1167,9 +1102,9 @@ function confirmBuy(){
   setBalance(newBalance);
   
   let user=getUser();
-  saveOrder(selectedApp.name, selectedQuantity, selectedPrice);
+  saveOrder(selectedApp,selectedAmount,selectedPrice);
   
-  sendToTelegram("🛒 طلب شراء جديد\n👤 الإيميل: "+(user.email||"غير معروف")+"\n🆔 ID: "+userId+"\n📱 التطبيق: "+selectedApp.name+"\n💎 الكمية: "+selectedQuantity+"\n💰 السعر: $"+selectedPrice.toFixed(3)+"\n📅 التاريخ: "+new Date().toLocaleDateString('ar-EG')+"\n⏰ الوقت: "+new Date().toLocaleTimeString('ar-EG'));
+  sendToTelegram("🛒 طلب شراء جديد\n👤 الإيميل: "+(user.email||"غير معروف")+"\n🆔 ID: "+userId+"\n📱 التطبيق: "+selectedApp+"\n💎 الكمية: "+selectedAmount+"\n💰 السعر: $"+selectedPrice+"\n📅 التاريخ: "+new Date().toLocaleDateString('ar-EG')+"\n⏰ الوقت: "+new Date().toLocaleTimeString('ar-EG'));
   
   document.getElementById("modal").style.display="none";
   alert("✅ تم تأكيد الطلب!");
@@ -1258,10 +1193,6 @@ function goWhatsApp(){
   window.open(url,"_blank");
 }
 
-function openShamSYP(){hideAll();document.getElementById("shamSYP").style.display="block";}
-function openShamUSD(){hideAll();document.getElementById("shamUSD").style.display="block";}
-function openBank(){hideAll();document.getElementById("bankPage").style.display="block";}
-
 function saveOrder(app, amount, price){
   let user=getUser();
   if(!user.email) return;
@@ -1297,7 +1228,7 @@ function loadOrders(){
     orders.forEach(o=>{
       let statusText=o.completed?"✅ تم التنفيذ":"⏳ قيد الانتظار";
       let statusClass=o.completed?"completed":"";
-      html+=`<div class="order-item ${statusClass}"><h3>${o.app}</h3><p><strong>الكمية:</strong> ${o.amount} 💎</p><p><strong>السعر:</strong> $${o.price.toFixed(3)}</p><p><strong>📅 التاريخ:</strong> ${o.date || o.time}</p><p><strong>⏰ الوقت:</strong> ${o.time}</p><div class="status ${o.completed?"completed":"pending"}"><strong>${statusText}</strong></div></div>`;
+      html+=`<div class="order-item ${statusClass}"><h3>${o.app}</h3><p><strong>الكمية:</strong> ${o.amount} 💎</p><p><strong>السعر:</strong> $${o.price}</p><p><strong>📅 التاريخ:</strong> ${o.date || o.time}</p><p><strong>⏰ الوقت:</strong> ${o.time}</p><div class="status ${o.completed?"completed":"pending"}"><strong>${statusText}</strong></div></div>`;
     });
   }
   
@@ -1360,3 +1291,4 @@ document.addEventListener("DOMContentLoaded",function(){
 
 </body>
   </html>
+
