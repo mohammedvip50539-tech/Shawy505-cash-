@@ -902,37 +902,16 @@ async function register(){
     });
     
     const data = await response.json();
-    
-    if(data.success){
-      let users=JSON.parse(localStorage.getItem("users"))||[];
-      if(!users.find(u=>u.email===email)){
-        users.push({email: email, password: btoa(password)});
-        localStorage.setItem("users", JSON.stringify(users));
-      }
-      localStorage.setItem("balance_"+email, "0");
-      localStorage.setItem("orders_"+email, "[]");
-      
-      alert("✅ تم إنشاء الحساب بنجاح!");
-      document.getElementById("regEmail").value="";
-      document.getElementById("regPassword").value="";
-      document.getElementById("regPasswordConfirm").value="";
-      goToLogin();
-    } else {
-      alert("❌ " + (data.message || "خطأ في الإنشاء"));
-    }
-  } catch(e) {
-    alert("❌ خطأ في الاتصال. سيتم الحفظ محلياً");
-    let users=JSON.parse(localStorage.getItem("users"))||[];
-    if(users.find(u=>u.email===email)){
-      alert("❌ هذا الحساب موجود بالفعل");
-      return;
-    }
-    users.push({email: email, password: btoa(password)});
-    localStorage.setItem("users", JSON.stringify(users));
-    localStorage.setItem("balance_"+email, "0");
-    localStorage.setItem("orders_"+email, "[]");
-    alert("✅ تم إنشاء الحساب (محلي)!");
-    goToLogin();
+  
+  if(data.success){
+  alert("✅ تم إنشاء الحساب بنجاح!");
+  document.getElementById("regEmail").value="";
+  document.getElementById("regPassword").value="";
+  document.getElementById("regPasswordConfirm").value="";
+  goToLogin();
+} else {
+  alert("❌ " + (data.message || "خطأ في الإنشاء"));
+                          }
   }
 }
 
@@ -958,34 +937,16 @@ async function login(){
     const data = await response.json();
     
     if(data.success){
-      localStorage.setItem("currentUser", JSON.stringify({email: email}));
-      localStorage.setItem("balance_"+email, data.balance || 0);
+      
       document.getElementById("loginPage").style.display="none";
       document.getElementById("home").style.display="block";
-      localStorage.setItem("loggedIn","true");
+    
       loadApps();
       updateBalance();
       alert("✅ أهلا وسهلا!");
     } else {
       alert("❌ " + (data.message || "بيانات خاطئة"));
     }
-  } catch(e) {
-    alert("❌ خطأ في الاتصال. سيتم المحاولة محلياً");
-    let users=JSON.parse(localStorage.getItem("users"))||[];
-    let user=users.find(u=>u.email===email&&u.password===btoa(password));
-    
-    if(user){
-      localStorage.setItem("currentUser", JSON.stringify(user));
-      document.getElementById("loginPage").style.display="none";
-      document.getElementById("home").style.display="block";
-      localStorage.setItem("loggedIn","true");
-      loadApps();
-      updateBalance();
-      alert("✅ أهلا وسهلا (محلي)!");
-    } else {
-      alert("❌ الإيميل أو كلمة المرور غلط");
-    }
-  }
 }
 
 function logout(){
